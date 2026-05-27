@@ -4165,7 +4165,9 @@ function updateSelectedInfo() {
                     img.setAttribute('src', fullPath);
                 }
                 img.classList.add('option-image');
-                img.addEventListener('click', () => openMediaModal(img.getAttribute('src'), img.getAttribute('alt') || ''));
+                // NOTE: do NOT attach addEventListener here — temp.innerHTML
+                // serializes the DOM back to a string, which drops listeners.
+                // Image clicks are handled by the delegated listener below.
             });
 
             return temp.innerHTML;
@@ -4204,6 +4206,33 @@ function updateSelectedInfo() {
         document.getElementById('media-modal').addEventListener('click', (e) => {
             if (e.target.id === 'media-modal') {
                 document.getElementById('media-modal').classList.remove('show');
+            }
+        });
+
+        // Delegated click handler for question/answer/explanation images.
+        // Uses event delegation because displayLearningQuestion and
+        // displayExamQuestion re-write innerHTML for every question, which
+        // wipes any directly-attached listeners on those images.
+        document.addEventListener('click', (e) => {
+            const img = e.target.closest('img');
+            if (!img) return;
+            // Don't re-open the modal when clicking inside it.
+            if (img.closest('#media-modal')) return;
+            // Only handle images inside question / answer / explanation areas.
+            if (!img.closest('.question-stem, .answer-option, .commentary-content, .uw-main .media-item')) return;
+            const src = img.getAttribute('src') || img.src;
+            if (!src) return;
+            e.preventDefault();
+            openMediaModal(src, img.getAttribute('alt') || '');
+        });
+
+        // Allow Escape to close the media modal too.
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('media-modal');
+                if (modal && modal.classList.contains('show')) {
+                    modal.classList.remove('show');
+                }
             }
         });
 

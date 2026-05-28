@@ -1252,10 +1252,40 @@ img {
            ===================================================================== */
         :root { --text-scale: 1; }
 
-        /* Topbar back button */
+        /* Topbar back button — styled to match the UWorld navy header */
         .topbar-left { display: flex; align-items: center; gap: 14px; }
-        .topbar-back-btn { font-size: 13px; height: 38px; padding: 0 14px; }
-        .topbar-back-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .topbar-back-btn {
+            font-size: 12px;
+            font-weight: 600;
+            font-family: Arial, Helvetica, sans-serif;
+            height: 34px;
+            padding: 0 16px 0 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff;
+            color: #222;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+            min-height: 34px;
+            line-height: 1;
+        }
+        .topbar-back-btn:hover {
+            background: #f5f5f5;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        .topbar-back-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .topbar-back-btn .back-arrow {
+            font-size: 15px;
+            line-height: 1;
+        }
 
         /* Hide the page topbar + hero while inside a question block */
         body.in-nbme-question .topbar,
@@ -1857,8 +1887,8 @@ img {
                 <div class="title">Medicine Academy</div>
             </div>
         </div>
-        <button class="btn topbar-back-btn" id="topbar-back-btn" onclick="uwExitToHome()" style="display:none; position:absolute; left:14px; top:14px; z-index:10;" title="Back to Dashboard">
-            <span aria-hidden="true" style="margin-right:6px;">&larr;</span>Dashboard
+        <button class="topbar-back-btn" id="topbar-back-btn" onclick="uwExitToHome()" style="display:none; position:absolute; left:16px; top:16px; z-index:10;" title="Back to Dashboard">
+            <span class="back-arrow" aria-hidden="true">&#8592;</span>Dashboard
         </button>
 
         <div class="header">
@@ -2354,7 +2384,28 @@ img {
         }
 
         // ============== Medicine Academy UWorld helper layer ==============
+
+        // Wipe all saved highlights and question flags from localStorage so
+        // each session starts clean.  Keeps non-quiz keys (font scale, etc.).
+        function uwClearSessionData() {
+            try {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('HL_') || key.startsWith('MA_FLAG'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(k => localStorage.removeItem(k));
+            } catch (e) {
+                console.warn('uwClearSessionData error', e);
+            }
+        }
+
         function uwExitToHome() {
+            // Clear highlights and flags so the next session starts fresh.
+            uwClearSessionData();
+
             const __lq = document.getElementById('learning-questions');
             if (__lq) { __lq.classList.remove('nbme-skin'); __lq.classList.remove('uw-skin'); __lq.innerHTML = ''; __lq.style.display = 'none'; }
             const __eq = document.getElementById('exam-questions');

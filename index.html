@@ -243,26 +243,17 @@ a:hover{filter:brightness(.9)}
   color:var(--primary)
 }
 
-/* watermark overlay for thumbnails and modal images */
-.ma-watermarked{
+/* Watermark overlay removed by request — keep .ma-watermarked positioning only. */
+.ma-watermarked,
+.ma-image-wrapper{
   position:relative;
   display:inline-block;
 }
-.ma-watermarked::after{
-  content:"Medicine Academy";
-  position:absolute;
-  right:10px;
-  bottom:10px;
-  font-size:12px;
-  padding:4px 8px;
-  border-radius:999px;
-  background:rgba(0,0,0,.55);
-  color:rgba(255,255,255,.92);
-  pointer-events:none;
-  text-transform:uppercase;
-  letter-spacing:.08em;
+.ma-watermarked::after,
+.ma-watermarked::before{
+  content:none !important;
+  display:none !important;
 }
-.media-item.ma-watermarked img{display:block;}
 
 .modal{
   display:none;
@@ -2334,8 +2325,13 @@ img {
         });
 
         document.getElementById('back-from-learning').addEventListener('click', () => {
+            if (typeof uwClearSessionData === 'function') uwClearSessionData();
             currentDatabasePath = '';
             currentDatabase = null;
+            const __lq = document.getElementById('learning-questions');
+            if (__lq) { __lq.classList.remove('nbme-skin'); __lq.classList.remove('uw-skin'); __lq.innerHTML = ''; }
+            document.body.classList.remove('in-nbme-question');
+            if (typeof uwStopTimer === 'function') uwStopTimer();
             showSection('main-menu');
         });
 
@@ -2361,6 +2357,7 @@ img {
         }
 
         function resetExamMode() {
+            if (typeof uwClearSessionData === 'function') uwClearSessionData();
             if (examTimer) {
                 clearInterval(examTimer);
                 examTimer = null;
@@ -2385,18 +2382,25 @@ img {
 
         // ============== Medicine Academy UWorld helper layer ==============
 
-        // Wipe all saved highlights and question flags from localStorage so
-        // each session starts clean.  Keeps non-quiz keys (font scale, etc.).
+        // Wipe ALL session state (highlights, flags, in-memory answers) so
+        // each new exam/learning session starts completely clean.
+        // Preserves user preferences such as font scale.
         function uwClearSessionData() {
             try {
                 const keysToRemove = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
-                    if (key && (key.startsWith('HL_') || key.startsWith('MA_FLAG'))) {
+                    if (!key) continue;
+                    // Wipe quiz session keys; keep user-preference keys.
+                    if (key.startsWith('HL_') || key.startsWith('MA_FLAG')) {
                         keysToRemove.push(key);
                     }
                 }
                 keysToRemove.forEach(k => localStorage.removeItem(k));
+                // Also clear in-memory answer state so it cannot leak between
+                // sessions if the page is not fully reloaded.
+                try { if (typeof userAnswers !== 'undefined') userAnswers = {}; } catch (_) {}
+                try { if (typeof selectedCategories !== 'undefined' && selectedCategories && selectedCategories.clear) selectedCategories.clear(); } catch (_) {}
             } catch (e) {
                 console.warn('uwClearSessionData error', e);
             }
@@ -4231,7 +4235,7 @@ function updateSelectedInfo() {
             modalContent.innerHTML = '';
 
             const imgWrapper = document.createElement('div');
-            imgWrapper.className = 'ma-watermarked';
+            imgWrapper.className = 'ma-image-wrapper';
 
             const img = document.createElement('img');
             img.src = src;
